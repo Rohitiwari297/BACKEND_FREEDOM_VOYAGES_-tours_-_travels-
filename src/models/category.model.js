@@ -8,10 +8,10 @@ const categorySchema = new mongoose.Schema(
             trim: true,
         },
 
-        primary: {
+        primaryId: {
             type: mongoose.Schema.Types.ObjectId,
-            ref: "Category",
-            default: null, // parent category
+            ref: "Primary",
+            required: [true, 'Primary menu is required']
         },
 
         sequence: {

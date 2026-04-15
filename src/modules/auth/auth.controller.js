@@ -4,18 +4,25 @@ import AsyncHandler from "../../utils/asyncHandler.js";
 import User from '../../models/user.model.js'
 import bcrypt from 'bcrypt'
 import { clearAuthCookies, setAuthCookies } from "../../utils/cookie.utils.js";
+import { deleteFile } from "../../utils/deleteFile.js";
 
 export const registerUser = AsyncHandler(async (req, res) => {
-    const { avatar, email, mobile, name, role, password } = req.body;
+    // console.log('request:',req.file)
+    const { email, mobile, name, role, password } = req.body;
 
-    if (!email || !mobile || !name || !role || !password) {
+    if (!name || !email || !mobile || !password || !role) {
+        deleteFile(req.file.path)
         throw new ApiError(400, `All fields are required!`)
     };
 
     const user = await User.findOne({ email });
     if (user) {
+        deleteFile(req.file.path)
         throw new ApiError(400, 'This user is already exists, Please login')
     }
+
+    // const avatar = req.file ? req.file.path : null;
+    const avatar = req.file.path || "";
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const newUser = await User.create({
@@ -27,16 +34,17 @@ export const registerUser = AsyncHandler(async (req, res) => {
         role: role
     })
 
+    if (!newUser) {
+        deleteFile(req.body.path)
+        throw new ApiError(400, 'Database error while create user')
+    }
+
     const responseObj = {
         name: newUser.name,
         email: newUser.email,
         mobile: newUser.mobile,
         avatar: newUser.avatar,
         role: newUser.role
-    }
-
-    if (!newUser) {
-        throw new ApiError(400, 'Database error while create user')
     }
 
     res.status(201).json(
@@ -49,11 +57,15 @@ export const registerUser = AsyncHandler(async (req, res) => {
 export const loginUser = AsyncHandler(async (req, res) => {
     // check email & password
     const { email, password } = req.body;
+    console.log('req.body:', email, password)
     if (!email || !password) {
         throw new ApiError(401, 'All fields are required!')
     };
 
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email }).select('+password');
+    console.log('user', user)
+    // console.log("Constructor:", user.constructor.name);
+    // console.log("Has method:", typeof user.generateAccessToken);
     if (!user) {
         throw new ApiError(400, 'This email is not register')
     }
@@ -73,8 +85,17 @@ export const loginUser = AsyncHandler(async (req, res) => {
 
     setAuthCookies(res, accessToken, refreshToken);
 
+    const safeUser = {
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        avatar: user.avatar,
+        mobile: user.mobile
+    };
+
+
     res.status(200).json(
-        new ApiResponse(200, "User login successful", { accessToken })
+        new ApiResponse(200, "User login successful", { safeUser })
     );
 });
 

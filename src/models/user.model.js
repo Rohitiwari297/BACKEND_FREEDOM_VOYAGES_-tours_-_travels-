@@ -24,6 +24,14 @@ const userSchema = new mongoose.Schema(
             ],
         },
 
+        password: {
+            type: String,
+            required: [true, "Password is required"],
+            select: false
+            // minlength: [3, "Name must be at least 3 characters"],
+            // maxlength: [20, "Name must be at most 20 characters"],
+        },
+
         mobile: {
             type: String,
             required: [true, "Mobile number is required"],
@@ -44,6 +52,7 @@ const userSchema = new mongoose.Schema(
 
         refreshToken: {
             type: String,
+            select: false
         }
     },
     {
@@ -51,7 +60,6 @@ const userSchema = new mongoose.Schema(
     }
 );
 
-const User = mongoose.model("User", userSchema);
 
 //instance methods
 userSchema.methods.generateAccessToken = function () {
@@ -74,5 +82,7 @@ userSchema.methods.generateRefreshToken = function () {
         { expiresIn: "7d" }
     );
 }
+
+const User = mongoose.model("User", userSchema);
 
 export default User;

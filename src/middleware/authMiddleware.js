@@ -7,8 +7,8 @@ import jwt from 'jsonwebtoken'
 export const isLoggedIn = AsyncHandler(async (req, res, next) => {
     let token;
 
-    if (req.cookies?.generateAccessToken) {
-        token = req.cookies?.generateAccessToken
+    if (req.cookies?.accessToken) {
+        token = req.cookies?.accessToken
     } else if (req.headers.authorization?.startsWith("Bearer")) {
         token = req.headers.authorization.split(" ")[1];
     }

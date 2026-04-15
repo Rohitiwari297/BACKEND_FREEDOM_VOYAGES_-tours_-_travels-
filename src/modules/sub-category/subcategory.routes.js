@@ -1,19 +1,19 @@
 import express from "express";
 import { isLoggedIn } from "../../middleware/authMiddleware.js";
-import { createCategory, getCategory } from "./category.controller.js";
 import upload from "../../middleware/uploadMiddleware.js";
+import { createSubCategory, getSubCategory } from "./subcategory.controller.js";
 
-const category = express.Router();
+const subCategory = express.Router();
 
 // Admin only
-category.route("/")
+subCategory.route("/")
     .post(
         // isLoggedIn,
         upload.single("sliders"),
-        createCategory
+        createSubCategory
     )
     .get(
-        getCategory
+        getSubCategory
     );
 
-export default category;
+export default subCategory;
