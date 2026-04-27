@@ -63,21 +63,47 @@ export const createCategory = asyncHandler(async (req, res) => {
 });
 
 export const getCategory = asyncHandler(async (req, res) => {
-    const { id } = req.query;
+    const { id, primaryId } = req.query;
 
-    let data;
+    let queryObj = {};
 
     if (id) {
-        data = await Category.findById(id);
-
-        if (!data) {
-            throw new ApiError(404, "No category found with this id");
-        }
-    } else {
-        data = await Category.find();
+        queryObj._id = id; // use _id for MongoDB
     }
+
+    if (primaryId) {
+        queryObj.primaryId = primaryId;
+    }
+
+    const data = await Category.find(queryObj);
+    console.log('res', data);
 
     res.status(200).json(
         new ApiResponse(200, "Category fetched successfully", data)
     );
 });
+
+export const updateCategory = asyncHandler(async (req, res) => {
+    const { name, primaryId, sequence } = req.body;
+    const { id } = req.params;
+
+    const category = await Category.findById(id)
+    if (!category) throw new ApiError(400, 'Invalid category id');
+
+    category.name = name ?? category.name;
+    category.primaryId = primaryId ?? category.primaryId;
+    category.sequence = sequence ?? category.sequence;
+
+    if (req.file) {
+        // Delete old file if exists
+        if (category.image) {
+            // Logic to delete old file could be added here if desired
+        }
+        category.image = `/uploads/${req.file.filename}`;
+    }
+
+    const updatedCategory = await category.save();
+    return res.status(200).json(
+        new ApiResponse(200, "Category updated successfully", updatedCategory)
+    );
+})

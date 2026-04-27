@@ -14,6 +14,10 @@ const primarySchema = new mongoose.Schema(
             type: String,
             trim: true,
         },
+        indexNumber: {
+            type: Number,
+            default: 0
+        },
         isActive: {
             type: Boolean,
             default: true,

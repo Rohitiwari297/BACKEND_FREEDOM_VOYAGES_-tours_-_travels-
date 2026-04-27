@@ -8,6 +8,7 @@ import userRoute from "./modules/user/user.routes.js"
 import categoryRoute from './modules/category/category.routes.js'
 import primaryRoute from './modules/primaryMenu/primaryMenu.routes.js';
 import subCategoryRoute from './modules/sub-category/subcategory.routes.js';
+import packagesRoute from './modules/trip_Package/package.routes.js';
 import cors from 'cors'
 import path from 'path'
 
@@ -36,6 +37,7 @@ app.use('/api/users', userRoute)
 app.use('/api/category', categoryRoute)
 app.use('/api/primary-menu', primaryRoute)
 app.use('/api/sub-category', subCategoryRoute)
+app.use('/api/package', packagesRoute)
 app.use("/uploads", express.static(path.join(process.cwd(), "src/uploads")));
 
 // ALWAYS BE THE LAST

@@ -60,3 +60,25 @@ export const getSubCategory = AsyncHandler(async (req, res) => {
     );
 });
 
+export const updateSubCategory = AsyncHandler(async (req, res) => {
+    const { primaryId, categoryId, name, sequence } = req.body;
+    const { id } = req.params;
+
+    const subCategory = await Subcategory.findById(id);
+    if (!subCategory) throw new ApiError(400, 'Invalid sub-category id');
+
+    subCategory.name = name ?? subCategory.name;
+    subCategory.primaryId = primaryId ?? subCategory.primaryId;
+    subCategory.sequence = sequence ?? subCategory.sequence;
+    subCategory.categoryId = categoryId ?? subCategory.categoryId;
+
+    if (req.file) {
+        subCategory.image = `/uploads/${req.file.filename}`;
+    }
+
+    const updatedSubCategory = await subCategory.save();
+    return res.status(200).json(
+        new ApiResponse(200, "Sub-Category updated successfully", updatedSubCategory)
+    );
+});
+
