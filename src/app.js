@@ -9,12 +9,29 @@ import categoryRoute from './modules/category/category.routes.js'
 import primaryRoute from './modules/primaryMenu/primaryMenu.routes.js';
 import subCategoryRoute from './modules/sub-category/subcategory.routes.js';
 import packagesRoute from './modules/trip_Package/package.routes.js';
+import blogRoute from './modules/clientPics&blogs/blog.routes.js';
 import cors from 'cors'
 import path from 'path'
 
 
 const app = express()
 connectDB();
+
+// Debug Images path
+import fs from "fs";
+
+app.get("/check-path", (req, res) => {
+  const fullPath = path.join(process.cwd(), "src/uploads");
+
+  const files = fs.readdirSync(fullPath);
+  res.json({
+    folder: fullPath,
+    files
+  });
+});
+
+
+app.use("/uploads", express.static(path.join(process.cwd(), "src/uploads")));
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 
@@ -32,13 +49,19 @@ app.get('/', (req, res) => {
   res.send('Server running... ')
 })
 
+
+
+
+
 app.use('/api/auth', authRoute)
 app.use('/api/users', userRoute)
 app.use('/api/category', categoryRoute)
 app.use('/api/primary-menu', primaryRoute)
 app.use('/api/sub-category', subCategoryRoute)
 app.use('/api/package', packagesRoute)
-app.use("/uploads", express.static(path.join(process.cwd(), "src/uploads")));
+app.use('/api/blogs', blogRoute)
+
+
 
 // ALWAYS BE THE LAST
 app.use(globalErrorHandler)

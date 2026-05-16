@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import ApiError from "../../utils/apiErrorHandler.js";
 import ApiResponse from "../../utils/apiResponseHandler.js";
 import asyncHandler from "../../utils/asyncHandler.js";
@@ -75,7 +76,9 @@ export const getCategory = asyncHandler(async (req, res) => {
         queryObj.primaryId = primaryId;
     }
 
-    const data = await Category.find(queryObj);
+    const data = await Category.find(queryObj).sort({
+        sequence: 1
+    });
     console.log('res', data);
 
     res.status(200).json(
@@ -107,3 +110,19 @@ export const updateCategory = asyncHandler(async (req, res) => {
         new ApiResponse(200, "Category updated successfully", updatedCategory)
     );
 })
+
+export const deleteCategory = asyncHandler(async (req, res) => {
+    const id = req.params.id?.trim();
+    console.log('iddddd:', id)
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+        throw new ApiError(400, 'Invalid ObjectId format');
+    }
+
+    const deletedData = await Category.findByIdAndDelete(id)
+    if (!deletedData) throw new ApiError(400, 'Invalid primary id');
+
+    return res.status(200).json(
+        new ApiResponse(200, 'Data Deleted Successfully!', deletedData)
+    );
+});

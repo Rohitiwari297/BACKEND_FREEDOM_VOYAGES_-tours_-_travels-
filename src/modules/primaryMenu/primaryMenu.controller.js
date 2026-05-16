@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import Primary from "../../models/primaryMenu.model.js";
 import ApiError from "../../utils/apiErrorHandler.js";
 import ApiResponse from "../../utils/apiResponseHandler.js";
@@ -60,11 +61,18 @@ export const updatePrimary = AsyncHandler(async (req, res) => {
 });
 
 export const deletePrimary = AsyncHandler(async (req, res) => {
-    const { id } = req.params;
+    const id = req.params.id?.trim();
+    console.log('iddddd:', id)
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+        throw new ApiError(400, 'Invalid ObjectId format');
+    }
+
     const deletedData = await Primary.findByIdAndDelete(id)
-    if (!deletedData) throw new ApiError(400, 'Invalid id');
+    if (!deletedData) throw new ApiError(400, 'Invalid primary id');
 
     return res.status(200).json(
         new ApiResponse(200, 'Data Deleted Successfully!', deletedData)
     );
 });
+

@@ -53,7 +53,7 @@ const packageSchema = new mongoose.Schema(
 
         // Files
         pdf: String, // URL
-        tourPhoto: String, // URL
+        tourPhoto: [String], // URL
 
         // Flight
         flightDeparture: String,

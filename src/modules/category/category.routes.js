@@ -1,6 +1,6 @@
 import express from "express";
 import { isLoggedIn } from "../../middleware/authMiddleware.js";
-import { createCategory, getCategory, updateCategory } from "./category.controller.js";
+import { createCategory, deleteCategory, getCategory, updateCategory } from "./category.controller.js";
 import upload from "../../middleware/uploadMiddleware.js";
 
 const category = express.Router();
@@ -17,6 +17,7 @@ category.route("/")
     );
 
 category.route("/:id")
-    .patch(upload.single("sliders"), updateCategory);
+    .patch(upload.single("sliders"), updateCategory)
+    .delete(deleteCategory)
 
 export default category;

@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import Category from "../../models/category.model.js";
 import ApiError from "../../utils/apiErrorHandler.js";
 import AsyncHandler from "../../utils/asyncHandler.js";
@@ -49,7 +50,9 @@ export const getSubCategory = AsyncHandler(async (req, res) => {
     if (categoryId) queryObj.categoryId = categoryId;
     if (primaryId) queryObj.primaryId = primaryId;
 
-    const subCategory = await Subcategory.find(queryObj);
+    const subCategory = await Subcategory.find(queryObj).sort({
+        sequence: 1
+    });
 
     if (subCategory.length === 0) {
         throw new ApiError(404, 'No sub-category found');
@@ -79,6 +82,22 @@ export const updateSubCategory = AsyncHandler(async (req, res) => {
     const updatedSubCategory = await subCategory.save();
     return res.status(200).json(
         new ApiResponse(200, "Sub-Category updated successfully", updatedSubCategory)
+    );
+});
+
+export const deleteSubCategory = AsyncHandler(async (req, res) => {
+    const id = req.params.id?.trim();
+    console.log('iddddd:', id)
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+        throw new ApiError(400, 'Invalid ObjectId format');
+    }
+
+    const deletedData = await Subcategory.findByIdAndDelete(id)
+    if (!deletedData) throw new ApiError(400, 'Invalid primary id');
+
+    return res.status(200).json(
+        new ApiResponse(200, 'Data Deleted Successfully!', deletedData)
     );
 });
 

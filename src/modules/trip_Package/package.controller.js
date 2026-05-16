@@ -1,3 +1,5 @@
+import path from "path";
+import fs from "fs";
 import slugify from "slugify";
 import Primary from "../../models/primaryMenu.model.js";
 import Category from "../../models/category.model.js";
@@ -77,11 +79,13 @@ export const createPackage = AsyncHandler(async (req, res) => {
     let imageUrl = "";
 
     if (req.files?.pdf) {
-        pdfUrl = `/uploads/${req.files.pdf[0].filename.replace(/\s+/g, "-")}`;
+        pdfUrl = `/uploads/${req.files.pdf[0].filename}`;
     }
 
+    console.log('files', req.files.tourPhoto)
+
     if (req.files?.tourPhoto) {
-        imageUrl = `/uploads/${req.files.tourPhoto[0].filename.replace(/\s+/g, "-")}`;
+        imageUrl = req.files?.tourPhoto.map(img => `/uploads/${img.filename}`);
     }
 
     //  Create package
@@ -99,7 +103,7 @@ export const createPackage = AsyncHandler(async (req, res) => {
         showOnHomePage: showOnHomePage === 'true' || showOnHomePage === true,
         homePageOrder: homePageOrder ? Number(homePageOrder) : 0,
         pdf: pdfUrl,
-        tourPhoto: imageUrl,
+        tourPhoto: imageUrl || [], // Ensure it's an array
         flightDeparture,
         itinerary: parsedItinerary,
         priceDetails,
@@ -107,7 +111,7 @@ export const createPackage = AsyncHandler(async (req, res) => {
         hotels,
         extraOptions,
         isActive: isActive === 'true' || isActive === true,
-        forHomePage
+        forHomePage: showOnHomePage === 'true' || forHomePage === true
     });
 
     res.status(201).json(
@@ -120,7 +124,9 @@ export const getAllPackages = AsyncHandler(async (req, res) => {
         .populate("primaryId")
         .populate("categoryId")
         .populate("subCategoryId")
-        .sort({ createdAt: -1 });
+        .sort({
+            homePageOrder: 1
+        });
 
     res.status(200).json(
         new ApiResponse(200, "Packages retrieved successfully", packages)
@@ -133,8 +139,10 @@ export const getPackageById = AsyncHandler(async (req, res) => {
     const packageData = await Package.findById(id)
         .populate("primaryId")
         .populate("categoryId")
-        .populate("subCategoryId");
-
+        .populate("subCategoryId")
+        .sort({
+            homePageOrder: 1
+        })
     if (!packageData) {
         throw new ApiError(404, "Package not found");
     }
@@ -166,6 +174,7 @@ export const updatePackage = AsyncHandler(async (req, res) => {
         isActive,
         forHomePage,
     } = req.body;
+    console.log('isfordesktop:', showOnHomePage)
 
     const packageData = await Package.findById(req.params.id);
 
@@ -181,33 +190,50 @@ export const updatePackage = AsyncHandler(async (req, res) => {
     packageData.description = description ?? packageData.description;
     packageData.numberOfDays = numberOfDays ?? packageData.numberOfDays;
     packageData.country = country ?? packageData.country;
-    
+
     if (cities) {
         packageData.cities = Array.isArray(cities) ? cities : cities.split(",").map(c => c.trim());
     }
-    
+
     packageData.price = price ?? packageData.price;
     packageData.showOnHomePage = showOnHomePage === 'true' || showOnHomePage === true ? true : (showOnHomePage === 'false' || showOnHomePage === false ? false : packageData.showOnHomePage);
     packageData.homePageOrder = homePageOrder ?? packageData.homePageOrder;
     packageData.flightDeparture = flightDeparture ?? packageData.flightDeparture;
-    
+
     if (itinerary) {
         packageData.itinerary = typeof itinerary === "string" ? JSON.parse(itinerary) : itinerary;
     }
-    
+
     packageData.priceDetails = priceDetails ?? packageData.priceDetails;
     packageData.includes = includes ?? packageData.includes;
     packageData.hotels = hotels ?? packageData.hotels;
     packageData.extraOptions = extraOptions ?? packageData.extraOptions;
     packageData.isActive = isActive === 'true' || isActive === true ? true : (isActive === 'false' || isActive === false ? false : packageData.isActive);
-    packageData.forHomePage = forHomePage ?? packageData.forHomePage;
+    packageData.forHomePage = showOnHomePage ?? packageData.forHomePage;
 
     // Handle files
     if (req.files?.pdf) {
-        packageData.pdf = `/uploads/${req.files.pdf[0].filename.replace(/\s+/g, "-")}`;
+        // Delete old PDF if exists
+        if (packageData.pdf) {
+            const oldPdfPath = path.join(process.cwd(), "src", packageData.pdf.replace("/uploads/", "uploads/"));
+            if (fs.existsSync(oldPdfPath)) {
+                fs.unlinkSync(oldPdfPath);
+            }
+        }
+        packageData.pdf = `/uploads/${req.files.pdf[0].filename}`;
     }
     if (req.files?.tourPhoto) {
-        packageData.tourPhoto = `/uploads/${req.files.tourPhoto[0].filename.replace(/\s+/g, "-")}`;
+        // Delete old tour photos if they exist
+        if (packageData.tourPhoto && packageData.tourPhoto.length > 0) {
+            packageData.tourPhoto.forEach(photoPath => {
+                const oldPhotoPath = path.join(process.cwd(), "src", photoPath.replace("/uploads/", "uploads/"));
+                if (fs.existsSync(oldPhotoPath)) {
+                    fs.unlinkSync(oldPhotoPath);
+                }
+            });
+        }
+        // Save new tour photos
+        packageData.tourPhoto = req.files.tourPhoto.map(img => `/uploads/${img.filename}`);
     }
 
     const updatedPackage = await packageData.save();
@@ -220,9 +246,106 @@ export const updatePackage = AsyncHandler(async (req, res) => {
 export const deletePackage = AsyncHandler(async (req, res) => {
 
     const packageData = await Package.findByIdAndDelete(req.params.id);
-    if (!packageData) throw ApiError(400, 'Failed! Invalid package id');
+    if (!packageData) throw new ApiError(400, 'Failed! Invalid package id');
 
     res.status(200).json(
         new ApiResponse(200, 'Package deleted successfully!', packageData)
     )
 })
+
+export const getPackedWiseImages = AsyncHandler(async (req, res) => {
+
+    const packageData = await Package.find()
+    const imgageData = packageData.map((pkg) => ({
+        packageId: pkg._id,
+        PackageName: pkg.name,
+        packageImage: pkg.tourPhoto
+    }))
+    return res.status(200).json(
+        new ApiResponse(200, 'Images fetched successfully!', imgageData)
+    )
+})
+
+export const updatePackageImageById = AsyncHandler(async (req, res) => {
+    const { imageIndex } = req.body;
+    if (imageIndex === undefined) new ApiError(400, 'Failed ! Image Index missing');
+
+    // uploaded file
+    const newImg = `uploads/${req.file.filename}`;
+    if (!newImg) new ApiError(400, 'Failed ! New image required');
+
+    const packageData = await Package.findById(req.params.id);
+    if (!packageData) new ApiError(400, 'Failed ! Invalid package id');
+
+    // index validation
+    if (imageIndex < 0 || imageIndex >= packageData.tourPhoto.length) throw new ApiError(400, 'Invalid image index');
+
+    // replace image
+    const updatedImg = packageData.tourPhoto[imageIndex] = newImg;
+    await packageData.save();
+
+    return res.status(200).json(
+        new ApiResponse(
+            200,
+            'Image updated successfully',
+            updatedImg,
+
+        )
+    );
+})
+
+export const addPackageImageById = AsyncHandler(async (req, res) => {
+
+    const packageData = await Package.findById(req.params.id);
+
+    if (!packageData) {
+        throw new ApiError(400, 'Failed ! Invalid package id');
+    }
+
+    // uploaded image
+    if (!req.file) {
+        throw new ApiError(400, 'Failed ! Image required');
+    }
+
+    const newImg = `/uploads/${req.file.filename}`;
+
+    // add new image
+    packageData.tourPhoto.push(newImg);
+
+    await packageData.save();
+
+    return res.status(200).json(
+        new ApiResponse(
+            200,
+            'Image added successfully',
+            packageData,
+
+        )
+    );
+});
+
+export const deletePackageImageById = AsyncHandler(async (req, res) => {
+    const { imageIndex } = req.body;
+    if (imageIndex === undefined) new ApiError(400, 'Failed ! Image Index missing');
+
+    const packageData = await Package.findById(req.params.id);
+    if (!packageData) new ApiError(400, 'Failed ! Invalid package id');
+
+    // index validation
+    if (imageIndex < 0 || imageIndex >= packageData.tourPhoto.length) throw new ApiError(400, 'Invalid image index');
+
+    // delete image
+    const deletedImg = packageData.tourPhoto.splice(imageIndex, 1);
+    await packageData.save();
+
+    return res.status(200).json(
+        new ApiResponse(
+            200,
+            'Image deleted successfully',
+            deletedImg,
+
+        )
+    );
+})
+
+
