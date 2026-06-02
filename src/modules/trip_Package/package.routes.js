@@ -1,7 +1,7 @@
 import express from "express";
 import { isLoggedIn } from "../../middleware/authMiddleware.js";
 import upload from "../../middleware/uploadMiddleware.js";
-import { createPackage, getAllPackages, getPackageById, updatePackage, deletePackage, getPackedWiseImages, updatePackageImageById, addPackageImageById, deletePackageImageById } from "./package.controller.js";
+import { createPackage, getAllPackages, getPackageById, updatePackage, deletePackage, getPackedWiseImages, updatePackageImageById, addPackageImageById, deletePackageImageById, addPdf, updatePdf, getPdf } from "./package.controller.js";
 
 
 const packages = express.Router();
@@ -34,5 +34,22 @@ packages.route("/:id")
     .delete(deletePackage);
 
 
+/**
+ * ROUTES FOR PDF
+ */
+packages.route("/add/pfd")
+    .post(
+        upload.single("pdfFile"),
+        addPdf
+    )
+    .get(
+        getPdf
+    )
+
+packages.put(
+    "/update/pfd/",
+    upload.single("pdfFile"),
+    updatePdf
+);
 
 export default packages;

@@ -30,15 +30,15 @@ export const setAuthCookies = (res, accessToken, refreshToken) => {
   });
 };
 
-export const clearAuthCookies = (res) => {
-  const isProduction = process.env.NODE_ENV === "production";
+// export const clearAuthCookies = (res) => {
+//   const isProduction = process.env.NODE_ENV === "production";
 
-  const options = {
-    httpOnly: true,
-    secure: isProduction,
-    sameSite: "strict",
-  };
+//   const options = {
+//     httpOnly: true,
+//     secure: isProduction,
+//     sameSite: "strict",
+//   };
 
-  res.clearCookie("accessToken", options);
-  res.clearCookie("refreshToken", options);
-};
+//   res.clearCookie("accessToken", options);
+//   res.clearCookie("refreshToken", options);
+// };

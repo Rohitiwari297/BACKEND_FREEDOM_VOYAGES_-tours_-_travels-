@@ -3,7 +3,7 @@ import ApiResponse from '../../utils/apiResponseHandler.js'
 import AsyncHandler from "../../utils/asyncHandler.js";
 import User from '../../models/user.model.js'
 import bcrypt from 'bcrypt'
-import { clearAuthCookies, setAuthCookies } from "../../utils/cookie.utils.js";
+import { setAuthCookies } from "../../utils/cookie.utils.js";
 import { deleteFile } from "../../utils/deleteFile.js";
 
 export const registerUser = AsyncHandler(async (req, res) => {

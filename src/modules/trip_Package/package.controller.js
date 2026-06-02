@@ -4,13 +4,14 @@ import slugify from "slugify";
 import Primary from "../../models/primaryMenu.model.js";
 import Category from "../../models/category.model.js";
 import Subcategory from "../../models/subcategory.model.js";
-import Package from "../../models/package.model.js";
+import { Package, PdfModel } from "../../models/package.model.js";
 import AsyncHandler from "../../utils/asyncHandler.js";
 import ApiError from "../../utils/apiErrorHandler.js";
 import ApiResponse from "../../utils/apiResponseHandler.js";
+import { deleteFile } from '../../utils/deleteFile.js'
 
 export const createPackage = AsyncHandler(async (req, res) => {
-    console.log('package data:', req.body)
+    // console.log('package data:', req.body)
 
     const {
         primaryId,
@@ -347,5 +348,89 @@ export const deletePackageImageById = AsyncHandler(async (req, res) => {
         )
     );
 })
+
+
+/**
+ * APIs FOR PDF FOR RECO
+ */
+
+export const addPdf = AsyncHandler(async (req, res) => {
+    const pdfFile = `uploads/${req.file.filename}`;
+
+    const existingPdf = await PdfModel.findOne();
+
+    if (existingPdf) {
+        await deleteFile(existingPdf.pdfFile);
+
+        existingPdf.pdfFile = pdfFile;
+        await existingPdf.save();
+
+        return res.status(200).json(
+            new ApiResponse(200, "PDF updated successfully", existingPdf)
+        );
+    }
+
+    const savedPdf = await PdfModel.create({ pdfFile });
+
+    return res.status(201).json(
+        new ApiResponse(201, "PDF saved successfully", savedPdf)
+    );
+});
+
+export const updatePdf = AsyncHandler(async (req, res) => {
+    // const { id } = req.params;
+
+    const pdf = await PdfModel.findById();
+
+    if (!pdf) {
+        return res.status(404).json(
+            new ApiResponse(404, "PDF record not found")
+        );
+    }
+
+    const newFilePath = req.file?.path;
+
+    if (!newFilePath) {
+        return res.status(400).json(
+            new ApiResponse(400, "Please upload a file")
+        );
+    }
+
+    // Delete old file if it exists
+    if (pdf.pdfFile) {
+        await deleteFile(pdf.pdfFile);
+    }
+
+    pdf.pdfFile = newFilePath;
+    await pdf.save();
+
+    return res.status(200).json(
+        new ApiResponse(200, "File updated successfully", pdf)
+    );
+});
+
+export const getPdf = AsyncHandler(async (req, res) => {
+    const pdfs = await PdfModel.find().sort({ createdAt: -1 });
+
+    if (!pdfs.length) {
+        return res.status(404).json(
+            new ApiResponse(
+                404,
+                "No PDFs found",
+                []
+            )
+        );
+    }
+
+    return res.status(200).json(
+        new ApiResponse(
+            200,
+            "PDFs fetched successfully",
+            pdfs
+        )
+    );
+});
+
+
 
 

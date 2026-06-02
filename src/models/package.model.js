@@ -87,4 +87,14 @@ const packageSchema = new mongoose.Schema(
     { timestamps: true }
 );
 
-export default mongoose.model("Package", packageSchema);
+
+const pdfSchema = new mongoose.Schema({
+
+    // THIS PDF IS FOR RECO
+    pdfFile: {
+        type: String
+    }
+}, { timestamps: true })
+
+export const Package = mongoose.model("Package", packageSchema);
+export const PdfModel = mongoose.model('PdfModel', pdfSchema);
